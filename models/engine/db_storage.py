@@ -7,13 +7,14 @@ import os
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker, scoped_session
 from models.base_model import Base
-from models import base_model, amenity, city, place, review, state, user
+from models import amenity, city, place, review, state, user
 
 
 class DBStorage:
     """
-        handles long term storage of all class instances
+    Handles long-term storage of all class instances.
     """
+
     CNC = {
         'Amenity': amenity.Amenity,
         'City': city.City,
@@ -23,15 +24,12 @@ class DBStorage:
         'User': user.User
     }
 
-    """
-        handles storage for database
-    """
     __engine = None
     __session = None
 
     def __init__(self):
         """
-            creates the engine self.__engine
+        Creates the engine self.__engine.
         """
         self.__engine = create_engine(
             'mysql+mysqldb://{}:{}@{}/{}'.format(
@@ -44,7 +42,7 @@ class DBStorage:
 
     def all(self, cls=None):
         """
-           returns a dictionary of all objects
+        Returns a dictionary of all objects.
         """
         obj_dict = {}
         if cls is not None:
@@ -63,25 +61,25 @@ class DBStorage:
 
     def new(self, obj):
         """
-            adds objects to current database session
+        Adds objects to the current database session.
         """
         self.__session.add(obj)
 
     def save(self):
         """
-            commits all changes of current database session
+        Commits all changes of the current database session.
         """
         self.__session.commit()
 
     def rollback_session(self):
         """
-            rollsback a session in the event of an exception
+        Rolls back a session in the event of an exception.
         """
         self.__session.rollback()
 
     def delete(self, obj=None):
         """
-            deletes obj from current database session if not None
+        Deletes obj from the current database session if not None.
         """
         if obj:
             self.__session.delete(obj)
@@ -89,35 +87,33 @@ class DBStorage:
 
     def delete_all(self):
         """
-           deletes all stored objects, for testing purposes
+        Deletes all stored objects for testing purposes.
         """
         for c in DBStorage.CNC.values():
             a_query = self.__session.query(c)
             all_objs = [obj for obj in a_query]
-            for obj in range(len(all_objs)):
+            while all_objs:
                 to_delete = all_objs.pop(0)
-                to_delete.delete()
+                self.delete(to_delete)
         self.save()
 
     def reload(self):
         """
-           creates all tables in database & session from engine
+        Creates all tables in the database and session from the engine.
         """
         Base.metadata.create_all(self.__engine)
         self.__session = scoped_session(
-            sessionmaker(
-                bind=self.__engine,
-                expire_on_commit=False))
+            sessionmaker(bind=self.__engine, expire_on_commit=False))
 
     def close(self):
         """
-            calls remove() on private session attribute (self.session)
+        Calls remove() on the private session attribute (self.session).
         """
         self.__session.remove()
 
     def get(self, cls, id):
         """
-            retrieves one object based on class name and id
+        Retrieves one object based on class name and id.
         """
         if cls and id:
             fetch = "{}.{}".format(cls, id)
@@ -127,6 +123,6 @@ class DBStorage:
 
     def count(self, cls=None):
         """
-            returns the count of all objects in storage
+        Returns the count of all objects in storage.
         """
-        return (len(self.all(cls)))
+        return len(self.all(cls))
